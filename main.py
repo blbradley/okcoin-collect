@@ -40,6 +40,11 @@ value_schema = json.dumps({
     ]
 })
 
+def create_producer_request(key, value):
+    headers = {'Content-Type':'application/vnd.kafka.avro.v1+json'}
+    data = {'key_schema': key_schema, 'value_schema': value_schema, 'records': [{'key': exchange, 'value': value}]}
+    return Request('POST', kafka_rest_proxy_url + '/topics/exchanges_raw', data=json.dumps(data), headers=headers)
+
 s = Session()
 while True:
     response = ws.recv()
@@ -47,10 +52,7 @@ while True:
     timestamp = datetime.utcnow()
     exchange = 'okcoin'
     value = {'time': timestamp.isoformat(), 'exchange': exchange, 'event': response}
-
-    headers = {'Content-Type':'application/vnd.kafka.avro.v1+json'}
-    data = {'key_schema': key_schema, 'value_schema': value_schema, 'records': [{'key': exchange, 'value': value}]}
-    req = Request('POST', kafka_rest_proxy_url + '/topics/exchanges_raw', data=json.dumps(data), headers=headers)
+    req = create_producer_request(exchange, value)
 
     prepped = s.prepare_request(req)
     retry_count = 0
