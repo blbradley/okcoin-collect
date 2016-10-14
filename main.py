@@ -35,16 +35,24 @@ value_schema = json.dumps({
     ]
 })
 
+s = Session()
+
+def get_broker_ids():
+    req = s.get(kafka_rest_proxy_url + '/brokers').json()
+    return req['brokers']
+
 def create_producer_request(key, value):
     headers = {'Content-Type':'application/vnd.kafka.avro.v1+json'}
     data = {'key_schema': key_schema, 'value_schema': value_schema, 'records': [{'key': key, 'value': value}]}
     return Request('POST', kafka_rest_proxy_url + '/topics/exchanges_raw', data=json.dumps(data), headers=headers)
 
 def main():
+    if not get_broker_ids():
+        raise RuntimeError('No brokers connected.')
+
     ws = create_connection('wss://real.okcoin.cn:10440/websocket/okcoinapi')
     ws.send(initial_msg)
 
-    s = Session()
     while True:
         response = ws.recv()
 
